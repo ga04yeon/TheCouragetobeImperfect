@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2</title>
+
+<style>
+@font-face {
+    font-family: 'TiquiTaca';
+    src: url('TiquiTaca-Regular.otf') format('opentype');
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #8001F0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+#title {
+    font-family: 'TiquiTaca', sans-serif;
+    font-size: 70px;
+    color: white;
+    line-height: 1.3;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1s ease, transform 1s ease;
+    text-align: center;
+}
+
+#clickHint {
+    font-family: 'TiquiTaca', sans-serif;
+    font-size: 32px;
+    color: #FEFE00;
+    margin-top: 40px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 1s ease, transform 1s ease;
+}
+
+.show #title,
+.show #clickHint {
+    opacity: 1;
+    transform: translateY(0px);
+}
+</style>
+</head>
+
+<body>
+
+<div id="title">Stage 2.<br>archery</div>
+<div id="clickHint">* click ! *</div>
+
+<script>
+// 난입 애니메이션 살짝 후 시작
+setTimeout(() => {
+    document.body.classList.add("show");
+}, 50);
+
+// 클릭하면 즉시 C.html로 이동
+document.body.addEventListener("click", () => {
+    window.location.href = "1126_C.html";  // ← C 페이지 파일명
+});
+</script>
+
+</body>
+</html>

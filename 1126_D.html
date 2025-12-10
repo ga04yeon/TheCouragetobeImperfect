@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<audio id="dropSound" src="drop.mp3" preload="auto"></audio>
+
+<title>3</title>
+<style>
+/* ====================================================================
+ * 1. 기본 레이아웃 및 배경 스타일
+ * ==================================================================== */
+body{
+    /* 요청된 배경색: #F44377 */
+    background-color:#F44377; 
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    font-family:Arial,sans-serif;
+    color:white;
+    padding:0;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    position:relative;
+    overflow:hidden
+}
+
+/* ====================================================================
+ * 2. 테두리 스타일
+ * ==================================================================== */
+/* 상하 테두리 스타일 */
+body::before{
+    content:"";
+    position:fixed;
+    top:48px;
+    left:0;
+    width:100%;
+    height:3px;
+    /* 요청된 테두리색: #E2E71B */
+    background-color:#E2E71B; 
+    pointer-events:none;
+    z-index:10
+}
+body::after{
+    content:"";
+    position:fixed;
+    bottom:48px;
+    left:0;
+    width:100%;
+    height:3px;
+    /* 요청된 테두리색: #E2E71B */
+    background-color:#E2E71B;
+    pointer-events:none;
+    z-index:10
+}
+/* 좌우 테두리 스타일 */
+#game-vertical-border-left{
+    content:"";
+    position:fixed;
+    top:0;
+    left:49px;
+    width:3px;
+    height:100%;
+    /* 요청된 테두리색: #E2E71B */
+    background-color:#E2E71B;
+    pointer-events:none;
+    z-index:10
+}
+#game-vertical-border-right{
+    content:"";
+    position:fixed;
+    top:0;
+    right:49px;
+    width:3px;
+    height:100%;
+    /* 요청된 테두리색: #E2E71B */
+    background-color:#E2E71B;
+    pointer-events:none;
+    z-index:10
+}
+
+/* ====================================================================
+ * 3. 게임 영역 및 저울 컨테이너 스타일
+ * ==================================================================== */
+
+/* 게임 컨테이너 (모든 동적 요소와 SVG를 담는 영역) */
+#game-container{
+    position:relative;
+    width:100%; 
+    height:calc(100vh - 96px); 
+    max-width:800px; 
+    margin:50px auto; 
+    z-index:1;
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    background-color: transparent; 
+}
+
+/* ====================================================================
+ * 4. 고정된 저울대 SVG 영역 스타일 (5px 올려진 상태 유지)
+ * ==================================================================== */
+#scale-pillar-svg {
+    position: absolute;
+    width: 312px;
+    height: 524px;
+    
+    left: 50%;
+    transform: translateX(-50%);
+
+    bottom: 5px; 
+
+    z-index: 1; 
+}
+
+/* ====================================================================
+ * 5. 저울 팔과 접시를 담는 컨테이너 (동적 요소)
+ * ==================================================================== */
+#scale-dynamics-container {
+    position: absolute;
+    width: 600px; 
+    height: 500px; 
+    
+    top: calc(100% - 490px); 
+    
+    left: 50%;
+    transform: translateX(-50%);
+    
+    z-index: 2; 
+}
+
+/* 저울 팔 (노란색) SVG 스타일 */
+#beam-svg {
+    position: absolute;
+    top: 50px; 
+    left: 22px; 
+    
+    transform-origin: 50% 50%; 
+    transition: transform 0.3s ease-out; 
+    z-index: 4;
+}
+
+/* 끈 SVG 스타일 */
+.rope-svg {
+    position: absolute;
+    width: 233px;
+    height: 280px;
+    
+    /* 노란 막대 하단에 부착 */
+    top: 59px; 
+    
+    transform-origin: top center;
+    transition: transform 0.3s ease-out;
+    z-index: 3;
+}
+
+#left-rope-svg {
+    left: -44.5px; 
+}
+
+#right-rope-svg {
+    left: 411.5px;
+}
+
+/* 접시 컨테이너 스타일 (접시와 추를 담음) */
+.pan-container {
+    position: absolute;
+    width: 250px;
+    height: 160px; 
+    
+    /* 40px 아래로 조정 */
+    top: 220px; 
+    
+    display: flex; 
+    justify-content: center;
+    align-items: flex-end; 
+    z-index: 5;
+    transition: transform 0.3s ease-out; 
+}
+
+#left-pan-container {
+    /* 중앙으로 이동 */
+    left: -50px; 
+}
+
+#right-pan-container {
+    /* 중앙으로 이동 */
+    left: 400px; 
+}
+
+/* 접시 SVG 스타일 */
+.pan-svg {
+    position: absolute; 
+    width: 250px;
+    height: 60px;
+    bottom: 0; 
+    left: 0;
+    top: initial; 
+    z-index: 5; /* 접시를 추(4)보다 위에 배치 */
+}
+
+/* 추 스타일 및 드래그 소스 영역 */
+.draggable-weight {
+    position: absolute; 
+    width: 40px;
+    height: 40px;
+    background-color: #FEDD00; 
+    border-radius: 50%;
+    cursor: grab;
+    z-index: 6; 
+    /* 소스 추에만 적용 (고정 위치) */
+    top: 0;
+    left: 0;
+}
+
+/* 접시에 놓인 추 스타일 (복제되어 사용됨) */
+.weight-on-pan {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-color: #FEDD00; 
+    border-radius: 50%;
+    z-index: 5;
+}
+
+/* 드래그 중인 추의 스타일 (추가적인 정의) */
+.clone-weight {
+    position: absolute; 
+    width: 40px;
+    height: 40px;
+    background-color: #FEDD00; 
+    border-radius: 50%;
+    cursor: grabbing;
+    z-index: 100; /* 가장 앞에 보이도록 z-index 높임 */
+}
+
+/* 고정된 파란색 추 (오른쪽 접시) */
+#blue-weight {
+    position: absolute; 
+    width: 105px; 
+    height: 105px;
+    background-color: #0000FF; 
+    border-radius: 50%; 
+    
+    bottom: 0px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    
+    /* 접시(5) 뒤에 배치 */
+    z-index: 4; 
+    pointer-events: none; 
+}
+
+/* 드래그 소스 영역 (왼쪽 상단) */
+#weights-source-area {
+    position: absolute;
+     top: 40px;     
+     left: 10px; 
+    gap: 10px;
+    width: 250px; 
+    padding: 10px;
+    z-index: 7;
+}
+
+/* 메시지 UI */
+#message {
+    position: absolute;
+    top: 20px;
+    font-size: 1.5em;
+    color: #FFEB3B; 
+    z-index: 10;
+}
+
+@font-face {
+    font-family: 'TiquiTaca';
+    src: url('TiquiTaca-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+#stage-hint {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #FEFE00;
+  font-size: 24px;
+  font-family: 'TiquiTaca', sans-serif;
+  pointer-events: none;
+  text-align: center;
+  z-index: 30;
+}
+
+#bottom-hint {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #87D9E5;
+  font-size: 20px;
+  font-family: 'TiquiTaca', sans-serif;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.pan-label{
+  position:absolute;
+  color:#FEFE00;
+  font-family:'TiquiTaca', sans-serif;
+  font-size:28px;
+  z-index:20;
+  pointer-events:none;
+}
+
+/* 왼쪽 접시 왼쪽 */
+#label-this{
+  top: 45px;     
+  left: 60px;      
+}
+
+/* 노란추 오른쪽 부근 */
+#label-tohere{
+  top: 60px;    
+  left: 85px;     
+}
+
+
+</style>
+</head>
+<body>
+<div id="stage-hint">Make it horizontal.</div>
+<div id="bottom-hint">* click here 3 times to pass *</div>
+<div id="game-vertical-border-left"></div>
+<div id="game-vertical-border-right"></div>
+
+
+<div id="game-container">
+    <div id="label-this" class="pan-label">← this</div>
+    <div id="message"></div>
+
+    <div id="scale-pillar-svg">
+        <svg width="312" height="524" viewBox="0 0 312 524" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 508.569C0 501.468 5.75712 495.71 12.8589 495.71H299.141C306.243 495.71 312 501.468 312 508.569V524H0V508.569Z" fill="#6DB8BE"/>
+<path d="M131.504 160.094C131.504 156.543 134.382 153.664 137.933 153.664H174.066C177.617 153.664 180.496 156.543 180.496 160.094C180.496 163.644 177.617 166.523 174.066 166.523H137.933C134.382 166.523 131.504 163.644 131.504 160.094Z" fill="#00B980"/>
+<path d="M30.9414 495.71C30.9414 490.029 35.5471 485.423 41.2285 485.423H270.77C276.451 485.423 281.057 490.029 281.057 495.71H30.9414Z" fill="#6DB8BE"/>
+<path d="M139.238 153.664C139.238 151.178 141.253 149.163 143.739 149.163H168.258C170.744 149.163 172.759 151.178 172.759 153.664H139.238Z" fill="#00B980"/>
+<path d="M130.858 382.552C130.858 375.45 136.616 369.693 143.717 369.693H168.28C175.382 369.693 181.139 375.45 181.139 382.552V485.423H130.858V382.552Z" fill="#00B980"/>
+<path d="M139.238 41.7915C139.238 34.6897 144.995 28.9326 152.097 28.9326H158.611C165.713 28.9326 171.47 34.6897 171.47 41.7915V126.66C171.47 133.762 165.713 139.519 158.611 139.519H152.097C144.995 139.519 139.238 133.762 139.238 126.66V41.7915Z" fill="#00B980"/>
+<path d="M146.329 142.436C146.329 137.274 150.514 133.089 155.676 133.089C160.838 133.089 165.023 137.274 165.023 142.436V369.693H146.329V142.436Z" fill="#00B980"/>
+<ellipse cx="14.5041" cy="14.4663" rx="14.5041" ry="14.4663" transform="matrix(1 0 0 -1 141.172 28.9326)" fill="#FFBAF9"/>
+</svg>
+    </div>
+    
+    <div id="scale-dynamics-container">
+        
+        <svg id="beam-svg" width="556" height="9" viewBox="0 0 556 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M551.5 -1.96702e-07C553.985 -8.80661e-08 556 2.01472 556 4.50001C556 6.9853 553.985 9.00002 551.5 9.00002L4.50001 9C2.01472 9 5.41671e-06 6.98528 5.52534e-06 4.49999C5.63398e-06 2.0147 2.01473 -2.42155e-05 4.50002 -2.41068e-05L551.5 -1.96702e-07Z" fill="#FEFE00"/>
+        </svg>
+
+        <svg id="left-rope-svg" class="rope-svg" width="233" height="280" viewBox="0 0 233 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M121.771 0.764648L1.77051 278.765" stroke="#87D9E5" stroke-width="3.85767"/>
+            <path d="M110.659 0.764648L230.659 278.765" stroke="#87D9E5" stroke-width="3.85767"/>
+        </svg>
+
+        <svg id="right-rope-svg" class="rope-svg" width="233" height="280" viewBox="0 0 233 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M121.771 0.764648L1.77051 278.765" stroke="#87D9E5" stroke-width="3.85767"/>
+            <path d="M110.659 0.764648L230.659 278.765" stroke="#87D9E5" stroke-width="3.85767"/>
+        </svg>
+
+        <div id="left-pan-container" class="pan-container">
+            <svg id="left-pan-svg" class="pan-svg" width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M250 8.60031e-05C250 62.4792 125 59.9864 125 59.9864C125 59.9864 0 62.4792 0 8.60031e-05C65.3045 8.60031e-05 55.9644 0 125 0C194.036 0 192.308 8.60031e-05 250 8.60031e-05Z" fill="#FFBAF9"/>
+            </svg>
+             <div id="label-tohere" class="pan-label">to here</div>
+        </div>
+
+        <div id="right-pan-container" class="pan-container">
+            <svg id="right-pan-svg" class="pan-svg" width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M250 8.60031e-05C250 62.4792 125 59.9864 125 59.9864C125 59.9864 0 62.4792 0 8.60031e-05C65.3045 8.60031e-05 55.9644 0 125 0C194.036 0 192.308 8.60031e-05 250 8.60031e-05Z" fill="#FFBAF9"/>
+            </svg>
+            <div id="blue-weight"></div> 
+        </div>
+
+    </div>
+
+    <div id="weights-source-area">
+        <div id="source-weight" class="draggable-weight"></div>
+    </div>
+
+</div>
+
+<script>
+    
+let clickCount = 0;
+let lastClickTime = 0;
+const TIMEOUT_MS = 500;       // 0.5초 안에 다시 클릭해야 연속으로 인정
+const REQUIRED_CLICKS = 3; 
+// ====================================================================
+// 전역 설정 및 상태 변수
+// ====================================================================
+
+// HTML 요소 획득
+const gameContainer = document.getElementById('game-container');
+const beam = document.getElementById('beam-svg');
+const leftRope = document.getElementById('left-rope-svg');
+const rightRope = document.getElementById('right-rope-svg');
+const leftPanContainer = document.getElementById('left-pan-container');
+const rightPanContainer = document.getElementById('right-pan-container');
+const leftPan = document.getElementById('left-pan-svg');
+const rightPan = document.getElementById('right-pan-svg');
+const weightsSourceArea = document.getElementById('weights-source-area');
+const message = document.getElementById('message');
+const sourceWeight = document.getElementById('source-weight'); 
+
+// 게임 상태 변수
+let weightLeft = 0; 
+let weightRight = 0; 
+const YELLOW_WEIGHT_VALUE = 1; // 노란 추 하나의 무게는 1
+const BLUE_WEIGHT_VALUE = 3; 
+// MAX_WEIGHTS_PER_PAN 변수는 이제 사용하지 않습니다.
+
+// 저울의 비대칭 상수 
+const LEFT_SIDE_MULTIPLIER = 1.0; 
+const RIGHT_SIDE_MULTIPLIER = 1.2; 
+const ARM_LENGTH = 556 / 2; // 막대 길이의 절반 (278px)
+
+// 드래그앤드롭 관련 변수
+let draggedWeight = null;
+let offsetX, offsetY; 
+
+// ====================================================================
+// 초기화 함수
+// ====================================================================
+
+function initialize() {
+    updateScale(); 
+}
+
+// ====================================================================
+// 저울 업데이트 함수 
+// ====================================================================
+
+function updateScale() {
+    // 유효 무게 계산
+    const effectiveWeightLeft = weightLeft * YELLOW_WEIGHT_VALUE * LEFT_SIDE_MULTIPLIER;
+    const effectiveWeightRight = (weightRight * YELLOW_WEIGHT_VALUE + BLUE_WEIGHT_VALUE) * RIGHT_SIDE_MULTIPLIER;
+    const weightDifference = effectiveWeightLeft - effectiveWeightRight; 
+
+    const maxAngle = 15;
+    
+    // W_L < W_R -> angle > 0 (오른쪽 하강)
+    let angle = (weightDifference / BLUE_WEIGHT_VALUE) * maxAngle * -1; 
+    
+    angle = Math.max(-maxAngle, Math.min(maxAngle, angle));
+
+    // 1. 노란 막대 기울이기
+    beam.style.transform = `rotate(${angle}deg)`;
+
+    // 2. 접시와 끈의 수직 이동량 계산
+    const angleRad = angle * (Math.PI / 180); 
+    const displacementY = Math.sin(angleRad) * ARM_LENGTH;
+
+    // 3. 끈과 접시 위치 조정
+    leftRope.style.transform = `translateY(${-displacementY}px)`;
+    leftPanContainer.style.transform = `translateY(${-displacementY}px)`;
+    
+    rightRope.style.transform = `translateY(${displacementY}px)`;
+    rightPanContainer.style.transform = `translateY(${displacementY}px)`;
+
+    message.textContent = ""; 
+    message.style.color = "#FFEB3B"; 
+}
+
+// ====================================================================
+// 드래그앤드롭 이벤트 핸들러
+// ====================================================================
+
+function startDrag(e) {
+    if (e.target.id !== 'source-weight') return;
+
+    const sourceWeight = document.getElementById('source-weight');
+    draggedWeight = sourceWeight.cloneNode(true); 
+    
+    draggedWeight.id = '';
+    draggedWeight.classList.remove('draggable-weight'); 
+    draggedWeight.classList.add('clone-weight'); // clone-weight 클래스 사용
+
+    const rect = sourceWeight.getBoundingClientRect();
+    
+    // 오프셋 계산 (마우스 포인터가 추의 어느 지점을 잡았는지 기록)
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    draggedWeight.style.position = 'absolute'; 
+    gameContainer.appendChild(draggedWeight); 
+
+    // 초기 드래그 위치 설정 (마우스 위치 기준, 오프셋 적용)
+    const gameContainerRect = gameContainer.getBoundingClientRect();
+    draggedWeight.style.left = `${e.clientX - gameContainerRect.left - offsetX}px`;
+    draggedWeight.style.top = `${e.clientY - gameContainerRect.top - offsetY}px`;
+
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
+}
+
+
+function drag(e) {
+    if (!draggedWeight) return;
+
+    const gameContainerRect = gameContainer.getBoundingClientRect();
+    
+    // 마우스 위치에서 오프셋을 빼서 추의 좌상단 위치를 계산합니다.
+    let newX = e.clientX - gameContainerRect.left - offsetX;
+    let newY = e.clientY - gameContainerRect.top - offsetY;
+
+    newX = Math.max(0, Math.min(newX, gameContainerRect.width - draggedWeight.offsetWidth));
+    newY = Math.max(0, Math.min(newY, gameContainerRect.height - draggedWeight.offsetHeight));
+
+    draggedWeight.style.left = `${newX}px`;
+    draggedWeight.style.top = `${newY}px`;
+}
+
+
+function endDrag(e) {
+    if (!draggedWeight) return;
+
+    document.removeEventListener('mousemove', drag);
+    document.removeEventListener('mouseup', endDrag);
+
+    const panLeftRect = leftPanContainer.getBoundingClientRect();
+    const panRightRect = rightPanContainer.getBoundingClientRect();
+    const draggedRect = draggedWeight.getBoundingClientRect();
+
+    let placedOnPan = false;
+
+    const isOverPan = (panRect) => (
+        draggedRect.right > panRect.left &&
+        draggedRect.left < panRect.right &&
+        draggedRect.bottom > panRect.top &&
+        draggedRect.top < panRect.bottom
+    );
+    
+    // 왼쪽 접시: 개수 제한 해제
+    if (isOverPan(panLeftRect)) {
+        placeWeightOnPan(draggedWeight, leftPanContainer, 'left');
+        placedOnPan = true;
+    } 
+    // 오른쪽 접시: 개수 제한 해제
+    else if (isOverPan(panRightRect)) {
+        placeWeightOnPan(draggedWeight, rightPanContainer, 'right');
+        placedOnPan = true;
+    } 
+    
+    if (!placedOnPan) {
+        // 접시에 놓지 못했을 때 드래그된 추 제거
+        draggedWeight.remove();
+    }
+
+    draggedWeight = null;
+    updateScale(); 
+}
+
+function placeWeightOnPan(weightElement, panContainerElement, side) {
+
+       const dropSound=document.getElementById("dropSound");
+    dropSound.currentTime=0;
+    dropSound.playbackRate = 1.6;
+    dropSound.play();
+
+    weightElement.classList.remove('clone-weight'); 
+    weightElement.classList.add('weight-on-pan');
+    weightElement.style.cursor = 'default';
+    weightElement.style.zIndex = 5; 
+
+    if (side === 'left') {
+        weightLeft++;
+    } else {
+        weightRight++;
+    }
+
+    panContainerElement.appendChild(weightElement);
+
+    // 접시에 쌓여있는 추들의 높이 위치 재계산
+    const panChildren = Array.from(panContainerElement.children);
+    let yellowWeightCount = 0;
+    const YELLOW_WEIGHT_HEIGHT = 40;
+
+    panChildren.forEach((child) => {
+        // 오직 노란 추(weight-on-pan)만 계산에 포함
+        if (child.classList.contains('weight-on-pan')) {
+            let blueWeightOffset = 0;
+            // 오른쪽 접시 컨테이너에 파란 추(div)가 있다면 그 높이만큼 오프셋 적용
+            if (panContainerElement.id === 'right-pan-container' && document.getElementById('blue-weight')) {
+                 blueWeightOffset = document.getElementById('blue-weight').offsetHeight; 
+            }
+
+            // 노란 추 크기(40px)를 사용하여 쌓습니다.
+            child.style.bottom = `${blueWeightOffset + (YELLOW_WEIGHT_HEIGHT * yellowWeightCount)}px`; 
+            child.style.left = '50%'; 
+            child.style.transform = 'translateX(-50%)';
+            child.style.position = 'absolute';
+            yellowWeightCount++;
+        }
+    });
+}
+
+
+// ====================================================================
+// 이벤트 리스너 등록 및 초기화
+// ====================================================================
+
+weightsSourceArea.addEventListener('mousedown', startDrag); 
+
+initialize(); 
+
+// 이벤트 리스너 등록 (스크립트 맨 아래에 추가)
+document.body.addEventListener('click', handleBodyClick);
+
+// 다음 페이지로 이동하는 함수
+function goToNextPage() {
+    window.location.href = 'E_intro.html'; // 1126_B.html 기준으로 작성
+}
+
+function handleBodyClick(e) {
+    // 저울이나 추 요소 위를 클릭했을 경우 무시 (배경 클릭만 허용)
+    if (e.target !== document.body) {
+        return;
+    }
+
+    const currentTime = new Date().getTime();
+
+    // 마지막 클릭으로부터 0.5초(500ms) 이내인지 확인
+    if (currentTime - lastClickTime < TIMEOUT_MS) {
+        clickCount++;
+    } else {
+        // 시간 초과 시 카운트 리셋 (새로운 연속 클릭 시작)
+        clickCount = 1;
+    }
+
+    lastClickTime = currentTime;
+
+    // 3회 연속 클릭 감지 시 페이지 이동
+    if (clickCount >= REQUIRED_CLICKS) {
+        clickCount = 0; // 초기화
+        goToNextPage();
+    }
+}
+
+
+</script>
+</body>
+</html>

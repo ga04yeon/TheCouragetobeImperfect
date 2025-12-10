@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<audio id="sparkSound" src="spark.mp3" preload="auto"></audio>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>4</title>
+
+<style>
+@font-face {
+  font-family:"TiquiTaca";
+  src:url("TiquiTaca-Regular.otf") format("opentype");
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#008A96;
+  font-family:Arial;
+}
+
+/* 테두리 */
+body::before,
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  width:100%;
+  height:3px;
+  background:#FBAAF5;
+  z-index:10;
+  pointer-events:none;
+}
+body::before{ top:48px; }
+body::after { bottom:48px; }
+
+#border-left,
+#border-right{
+  position:fixed;
+  top:0;
+  width:3px;
+  height:100%;
+  background:#FBAAF5;
+  z-index:10;
+  pointer-events:none;
+}
+#border-left{ left:49px;}
+#border-right{right:49px;}
+
+#stage-container{
+  width:100%;
+  height:100%;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* 성냥박스 컨테이너 */
+#svg-matchbox{
+  position:relative;
+  width:500px;
+  height:500px;
+  user-select:none;
+}
+
+/* 드래그되는 성냥(랩퍼) */
+.draggable-match{
+  position:absolute;
+  top:59.3%;
+  left:63.5%;
+  transform:translate(-50%,-50%);
+  width:130px;        
+  height:331px;      
+  transform-origin:center top;
+  pointer-events:auto;
+  z-index:20;
+}
+
+/* 랩퍼 안의 실제 성냥 SVG */
+.draggable-match svg{
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+/* 🔥 strike-zone: 훨씬 작고 더 오른쪽 */
+.strike-svg{
+  position:absolute;
+  top:30%;
+  right:-3px;
+  width:60px;
+  pointer-events:none;
+}
+
+#strike-zone{
+  position:absolute;
+  top:20%;
+  right:106px;
+  width:30px;
+  height:240px;
+}
+
+
+/* 스파크 */
+.spark{
+  position:absolute;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#FEFE00;
+  pointer-events:none;
+  opacity:1;
+  transform:translate(0,0);
+  transition:transform .35s ease-out, opacity .35s ease-out;
+  mix-blend-mode:screen;
+}
+
+#stage-hint {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #DBEF76;
+  font-size: 24px;
+  font-family: 'TiquiTaca', sans-serif;
+  pointer-events: none;
+  text-align: center;
+  z-index: 30;
+}
+
+#bottom-hint {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #FBAAF5;
+  font-size: 20px;
+  font-family: 'TiquiTaca', sans-serif;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 30;
+  transition: color 0.3s ease;
+}
+
+#bottom-hint:hover {
+  color:#FF0F10;    
+}
+
+
+</style>
+</head>
+<body>
+<div id="stage-hint">Light it up.</div>
+<div id="bottom-hint">***** " That's enough. Nothing goes my way. I want to stop... " *****</div>
+
+<div id="border-left"></div>
+<div id="border-right"></div>
+
+<div id="stage-container">
+
+  <div id="svg-matchbox">
+
+    <!-- 성냥 상자 SVG (배경) -->
+    <svg viewBox="0 0 532 869" preserveAspectRatio="xMidYMid meet"
+      style="width:100%; height:100%;">
+<svg width="532" height="869" viewBox="0 0 532 869" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M532 783L446 869H0L86 783H532Z" fill="#00626B"/>
+<rect x="86" y="86" width="360" height="697" fill="#640032"/>
+<path d="M0 869V86H86V783L0 869Z" fill="#00363B"/>
+<path d="M532 783L446 869V86L532 0V783Z" fill="#3C5A02"/>
+<path d="M532 0L446 86H0L86 0H532Z" fill="#DBEF76"/>
+<path d="M186.349 284.605C186.349 316.971 169.481 343.209 148.674 343.209C127.867 343.209 111 316.971 111 284.605C111 252.238 123.558 226 148.674 226C173.791 226 186.349 252.238 186.349 284.605Z" fill="#FF0F10"/>
+<rect width="469.674" height="43.5349" transform="matrix(-4.37114e-08 -1 -1 4.37114e-08 170.442 802)" fill="#FFF6ED"/>
+<path d="M264.349 284.605C264.349 316.971 247.481 343.209 226.674 343.209C205.867 343.209 189 316.971 189 284.605C189 252.238 201.558 226 226.674 226C251.791 226 264.349 252.238 264.349 284.605Z" fill="#FF0F10"/>
+<rect width="469.674" height="43.5349" transform="matrix(-4.37114e-08 -1 -1 4.37114e-08 248.442 802)" fill="#FFF6ED"/>
+<path d="M342.349 284.605C342.349 316.971 325.481 343.209 304.674 343.209C283.867 343.209 267 316.971 267 284.605C267 252.238 279.558 226 304.674 226C329.791 226 342.349 252.238 342.349 284.605Z" fill="#FF0F10"/>
+<rect width="469.674" height="43.5349" transform="matrix(-4.37114e-08 -1 -1 4.37114e-08 326.442 802)" fill="#FFF6ED"/>
+<path d="M463 631V160L515 108V579L463 631Z" fill="#592D00"/>
+</svg>
+
+    <!-- 드래그되는 성냥 -->
+    <div id="draggable" class="draggable-match">
+      <svg viewBox="0 0 76 576" preserveAspectRatio="xMidYMid meet">
+        <path d="M75.3488 58.6047C75.3488 90.9711 58.4814 117.209 37.6744 117.209C16.8674 117.209 0 90.9711 0 58.6047C0 26.2382 12.5581 0 37.6744 0C62.7907 0 75.3488 26.2382 75.3488 58.6047Z" fill="#FF0F10"/>
+        <rect width="469.674" height="43.5349" transform="matrix(-4.37114e-08 -1 -1 4.37114e-08 59.4424 576)" fill="#FFF6ED"/>
+      </svg>
+    </div>
+
+
+<div id="strike-zone"></div>
+  </div>
+</div>
+
+
+<script>
+const dragItem = document.getElementById("draggable");
+const stage = document.getElementById("stage-container");
+const strikeZone = document.getElementById("strike-zone");
+
+let dragging = false;
+let offsetX = 0, offsetY = 0;
+
+/* 성냥을 집어드는 느낌 */
+dragItem.addEventListener("mousedown", (e) => {
+  dragging = true;
+  dragItem.style.transform = "translate(-50%, -50%) rotate(315deg)";
+  offsetX = e.clientX - dragItem.offsetLeft;
+  offsetY = e.clientY - dragItem.offsetTop;
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (!dragging) return;
+
+  dragItem.style.left = (e.clientX - offsetX) + "px";
+  dragItem.style.top  = (e.clientY - offsetY) + "px";
+
+  checkStrike();
+});
+
+document.addEventListener("mouseup", () => {
+  dragging = false;
+  dragItem.style.transform = "translate(-50%, -50%) rotate(0deg)";
+});
+
+/* 마찰면 체크 */
+function checkStrike(){
+  const m = dragItem.getBoundingClientRect();
+  const s = strikeZone.getBoundingClientRect();
+
+  // 진짜 작은 "접점"만 잡기
+  const headSize = 8; // 8px짜리 점
+const headX = m.left + m.width*0.15;  // ← 0.10~0.14 사이로 감
+const headY = m.top  + m.height*0.14; // 머리는 맨위라 거의 그대로
+
+
+  const headRect = {
+    left:   headX - headSize/2,
+    right:  headX + headSize/2,
+    top:    headY - headSize/2,
+    bottom: headY + headSize/2
+  };
+
+  // 충돌 체크 → 오직 그 점(근처 몇 px)만
+  const overlap = !(
+    headRect.right  < s.left  ||
+    headRect.left   > s.right ||
+    headRect.bottom < s.top   ||
+    headRect.top    > s.bottom
+  );
+
+  if (overlap){
+    const audio = document.getElementById("sparkSound");
+audio.currentTime = 0; // 동일 구간 반복 허용
+audio.play();
+    const stageRect = stage.getBoundingClientRect();
+    sparkAt(
+      headX - stageRect.left,
+      headY - stageRect.top
+    );
+  }
+}
+
+/* 스파크 */
+function sparkAt(x, y){
+  for (let i = 0; i < 10; i++){
+    const sp = document.createElement("div");
+    sp.className = "spark";
+    sp.style.left = x + "px";
+    sp.style.top  = y + "px";
+    stage.appendChild(sp);
+
+    const ang  = Math.random() * Math.PI - Math.PI/2;
+    const dist = 20 + Math.random() * 30;
+    const dx   = Math.cos(ang) * dist;
+    const dy   = Math.sin(ang) * dist;
+
+    requestAnimationFrame(() => {
+      sp.style.transform = `translate(${dx}px, ${dy}px)`;
+      sp.style.opacity   = "0";
+    });
+
+    setTimeout(() => sp.remove(), 350);
+  }
+}
+
+const bottomHint=document.getElementById('bottom-hint');
+
+bottomHint.addEventListener('click',()=>{
+  bottomHint.style.color='#FF0F10';   // 클릭 시 white
+  setTimeout(()=>{ window.location.href='1126_Fin.html'; },350);
+});
+
+
+</script>
+</body>
+</html>

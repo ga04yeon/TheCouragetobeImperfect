@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Floating Smash - Photo Break</title>
+
+<style>
+@font-face {
+    font-family:'TiquiTaca-Regular';
+    src:url('TiquiTaca-Regular.otf') format('opentype');
+}
+
+:root{
+    --bg:#0000D4;
+    --accent:#FFFFFF;
+}
+
+html,body{
+    margin:0;padding:0;
+    overflow:hidden;
+    background:var(--bg);
+    font-family:"TiquiTaca-Regular",sans-serif;
+}
+
+/* ✦ 중앙 문구 (뒤쪽으로 보냄) */
+#centerMsg{
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%, -50%);
+    color:var(--accent);
+    font-size:40px;
+    text-align:center;
+    line-height:1.4;
+    max-width:70vw;
+    pointer-events:none;
+    user-select:none;
+    z-index:0;  /* ← 파편보다 뒤 */
+}
+
+/* 3D 무대 */
+#stage{
+    position:fixed;
+    inset:0;
+    perspective:1400px;
+}
+
+/* 파편 그룹 */
+#wall{
+    position:absolute;
+    inset:0;
+    transform-style:preserve-3d;
+    z-index:10; /* ← 파편이 앞 */
+}
+
+/* 타일 */
+.tile{
+    position:absolute;
+    transform-style:preserve-3d;
+}
+
+/* 사진이 파편에 그대로 찢어져 붙음 */
+.tile-face{
+    position:absolute;
+    inset:0;
+    background-image:url("end.png"); /* ✦ 사진 적용 */
+    background-repeat:no-repeat;
+    border:1px solid rgba(209,151,254,0.12);
+    backface-visibility:hidden;
+}
+
+/* 파편 그림자 */
+.tile-shadow{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.15);
+    transform:translateZ(-5px);
+    filter:blur(2px);
+}
+</style>
+</head>
+<body>
+
+<!-- ✦ 파편 뒤에 숨어 있는 텍스트 -->
+<div id="centerMsg">
+Real courage lies in acknowledging<br>
+that it cannot be perfect.
+</div>
+
+<div id="stage"><div id="wall"></div></div>
+
+<script>
+const wall=document.getElementById("wall");
+
+const COLS=28;
+const ROWS=18;
+
+let tiles=[];
+let smashed=false;
+
+/* -----------------------------
+   벽 생성 (사진을 조각으로 나누기)
+------------------------------ */
+function createWall(){
+    const W=innerWidth, H=innerHeight;
+    const w=W/COLS, h=H/ROWS;
+
+    wall.innerHTML="";
+    tiles=[];
+
+    for(let y=0;y<ROWS;y++){
+        for(let x=0;x<COLS;x++){
+            const t=document.createElement("div");
+            t.className="tile";
+            t.style.width=w+"px";
+            t.style.height=h+"px";
+            t.style.left=(x*w)+"px";
+            t.style.top=(y*h)+"px";
+
+            // 물리용 값 저장
+            t.px=0; t.py=0; t.pz=0;
+            t.vx=0; t.vy=0; t.vz=0;
+
+            const face=document.createElement("div");
+            face.className="tile-face";
+
+            /* ✦ end.png를 화면 전체로 확장해서 타일에 정확히 매핑 */
+            face.style.backgroundSize=`${W}px ${H}px`;
+            face.style.backgroundPosition=`-${x*w}px -${y*h}px`;
+
+            const sh=document.createElement("div");
+            sh.className="tile-shadow";
+
+            t.appendChild(face);
+            t.appendChild(sh);
+            wall.appendChild(t);
+
+            tiles.push(t);
+        }
+    }
+}
+
+/* -----------------------------
+   smash (부드럽게 퍼지기)
+------------------------------ */
+function smash(){
+    if(smashed) return;
+    smashed=true;
+
+    const cx=innerWidth/2;
+    const cy=innerHeight/2;
+
+    tiles.forEach(t=>{
+        const rect=t.getBoundingClientRect();
+        const tx=rect.left+rect.width/2;
+        const ty=rect.top+rect.height/2;
+
+        const dx=tx-cx;
+        const dy=ty-cy;
+        const dist=Math.sqrt(dx*dx+dy*dy)||1;
+
+        const nx=dx/dist;
+        const ny=dy/dist;
+
+        const power=12 + Math.random()*10;
+
+        t.vx = nx*power + (Math.random()-0.5)*4;
+        t.vy = ny*power + (Math.random()-0.5)*4;
+        t.vz = 30 + Math.random()*30;
+    });
+}
+
+/* -----------------------------
+   main update loop
+------------------------------ */
+function update(){
+    tiles.forEach(t=>{
+        t.vx*=0.94;
+        t.vy*=0.94;
+        t.vz*=0.96;
+
+        t.px+=t.vx*0.06;
+        t.py+=t.vy*0.06;
+        t.pz+=t.vz*0.03;
+
+        t.style.transform=
+          `translate3d(${t.px}px,${t.py}px,${t.pz}px)
+           rotateX(${t.px/10}deg)
+           rotateY(${t.py/10}deg)
+           rotateZ(${t.vx}deg)`;
+    });
+
+    requestAnimationFrame(update);
+}
+
+/* -----------------------------
+   커서 밀기 효과 (repulsion)
+------------------------------ */
+window.addEventListener("mousemove",e=>{
+    const mx=e.clientX, my=e.clientY;
+
+    tiles.forEach(t=>{
+        const rect=t.getBoundingClientRect();
+        const tx=rect.left+rect.width/2;
+        const ty=rect.top+rect.height/2;
+
+        const dx=tx-mx;
+        const dy=ty-my;
+        const dist=Math.sqrt(dx*dx+dy*dy)||1;
+
+        if(dist<140){
+            const force=(140-dist)/140;
+            const nx=dx/dist;
+            const ny=dy/dist;
+
+            t.vx += nx * force * 22;
+            t.vy += ny * force * 22;
+            t.vz += force * 10;
+        }
+    });
+});
+
+/* ----------------------------- */
+createWall();
+update();
+addEventListener("click",smash);
+addEventListener("resize",()=>{smashed=false;createWall();});
+</script>
+
+</body>
+</html>
+

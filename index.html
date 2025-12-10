@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tiqui Taca Text</title>
+  <style>
+    @font-face {
+      font-family: "TiquiTaca";
+      src: url("TiquiTaca-Regular.otf") format("opentype");
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #F44377;
+      font-family: sans-serif;
+    }
+
+    /* ------------ 첫 화면 (원래 SVG 화면) ------------- */
+    #screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 1s ease-in-out;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    svg text {
+      font-family: "TiquiTaca", sans-serif;
+      text-anchor: middle;
+      font-size: 200px;
+      fill: white;
+    }
+
+    .pink {
+      fill: #F44377 !important;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ------------ 두 번째 화면(파란 배경 Stage intro) ------------- */
+    #stageIntro {
+      position: absolute;
+      top: 100vh;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #0000FF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 1s ease-in-out;
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    #stageIntroText {
+      font-family: "TiquiTaca", sans-serif;
+      color: white;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 1s ease, transform 1s ease;
+      line-height: 1.3;
+      font-size: 64px;
+    }
+
+    /* ▼ 추가된 click 문구 스타일 */
+    #clickHint {
+      margin-top: 40px;
+      font-family: "TiquiTaca", sans-serif;
+      font-size: 32px;
+      color: #F9A0F0;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 1s ease, transform 1s ease;
+    }
+
+    /* intro 등장: 두 요소 동시에 페이드인 */
+    #stageIntro.show #stageIntroText {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+    #stageIntro.show #clickHint {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+  </style>
+</head>
+<body>
+
+<!-- 첫 화면 -->
+<div id="screen">
+  <svg width="1728" height="1117" viewBox="0 0 1728 1117" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0)">
+      <rect width="1728" height="1117" fill="#76D048"/>
+      <rect width="115" height="1117" fill="#E2E71B"/>
+      <rect x="230" width="116" height="1117" fill="#E2E71B"/>
+      <rect x="461" width="115" height="1117" fill="#E2E71B"/>
+      <rect x="691" width="115" height="1117" fill="#E2E71B"/>
+      <rect x="922" width="115" height="1117" fill="#E2E71B"/>
+      <rect x="1152" width="115" height="1117" fill="#E2E71B"/>
+      <rect x="1382" width="116" height="1117" fill="#E2E71B"/>
+      <rect x="1613" width="115" height="1117" fill="#E2E71B"/>
+      <ellipse cx="864" cy="558.5" rx="785" ry="507.5" fill="#F44377"/>
+      <path d="M864 97C1062.17 97 1241.39 148.883 1370.95 232.556C1500.54 316.254 1580 431.408 1580 558C1580 684.592 1500.54 799.746 1370.95 883.444C1241.39 967.117 1062.17 1019 864 1019C665.832 1019 486.61 967.117 357.053 883.444C227.455 799.746 148 684.592 148 558C148 431.408 227.455 316.254 357.053 232.556C486.61 148.883 665.832 97 864 97Z"
+            stroke="#F5CAE8" stroke-width="8"/>
+    </g>
+
+    <text class="pink" x="57.5" y="100">+</text>
+    <text class="pink" x="57.5" y="350">+</text>
+    <text class="pink" x="57.5" y="600">+</text>
+    <text class="pink" x="57.5" y="850">+</text>
+    <text class="pink" x="57.5" y="1100">+</text>
+
+    <text class="pink" x="1670.5" y="100">+</text>
+    <text class="pink" x="1670.5" y="350">+</text>
+    <text class="pink" x="1670.5" y="600">+</text>
+    <text class="pink" x="1670.5" y="850">+</text>
+    <text class="pink" x="1670.5" y="1100">+</text>
+
+    <text x="864" y="430">The Courage</text>
+    <text x="864" y="630">to be</text>
+    <text x="864" y="830">Imperfect</text>
+
+    <defs>
+      <clipPath id="clip0">
+        <rect width="1728" height="1117"/>
+      </clipPath>
+    </defs>
+  </svg>
+</div>
+
+<!-- 두 번째 화면 (Stage intro) -->
+<div id="stageIntro">
+  <div id="stageIntroText">
+    Stage 1.<br>
+    frame arrangement
+  </div>
+
+  <!-- ▼ 추가된 click hint -->
+  <div id="clickHint">* click ! *</div>
+</div>
+
+<script>
+  const screen = document.getElementById('screen');
+  const stageIntro = document.getElementById('stageIntro');
+
+  let step = 0;
+
+  // 첫 클릭 → 첫 화면 위로 올라감
+  screen.addEventListener('click', () => {
+    if (step === 0) {
+      screen.style.transform = 'translateY(-100vh)';
+      stageIntro.style.transform = 'translateY(-100vh)';
+      step = 1;
+
+      // 1초 뒤 intro 텍스트 등장
+      setTimeout(() => {
+        stageIntro.classList.add('show');
+        step = 2;
+      }, 1000);
+    }
+  });
+
+  // 두 번째 클릭 → B.html로 이동
+  stageIntro.addEventListener('click', () => {
+    if (step === 2) {
+      location.href = '1126_B.html';
+    }
+  });
+</script>
+
+</body>
+</html>
